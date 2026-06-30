@@ -5,6 +5,7 @@ import config from "../../config";
 import { NextFunction, Request, RequestHandler, Response } from "express";
 import { userService } from "./user.service";
 import { catchAsync } from "../../utils/catchAsync";
+import { sendResponce } from "../../utils/sendResponce";
 
 
 
@@ -35,28 +36,7 @@ import { catchAsync } from "../../utils/catchAsync";
         
 //     }
 // }
-type TMeta={
-    page:number;
-    limit:number;
-    total:number;
 
-}
-type TResponceData<T>={
-  success:boolean;
-  statusCode:number;
-  message:string;
-  data:T;
-  meta?:TMeta
-}
-const sendResponce=<T>(res:Response, data:TResponceData<T>)=>{
-  res.status(data.statusCode).json({
-    success:data.success,
-    statusCode:data.statusCode,
-    message:data.message,
-    data:data.data,
-    meta:data.meta
-  })  
-}
 
 const registerUser=catchAsync(async(req:Request,res:Response,next:NextFunction)=>{
      const payload=req.body;
