@@ -2,6 +2,16 @@ enum ActiveStatus{
    ACTIVE
    BLOCKED
 }
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CommentStatus {
+  APPROVED
+  REJECT
+}
 enum Role{
    USER
    AUTHOR

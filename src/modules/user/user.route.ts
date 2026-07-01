@@ -1,13 +1,27 @@
-import { Request, Response, Router } from "express";
-import { prisma } from "../../lib/prisma";
-import config from "../../config";
-import bcrypt from "bcryptjs";
-import httpStatus from 'http-status';
+import { Router } from "express";
 import { userController } from "./user.controller";
+import { Role } from "../../../generated/prisma/enums";
+import { auth } from "../../midlewares/auth";
 
-const router=Router();
 
 
 
-router.post('/register',userController.registerUser)
-export const userRoutes=router;
+const router = Router();
+
+
+router.post('/register', userController.registerUser);
+
+router.get('/me',auth(Role.ADMIN,Role.USER,Role.AUTHOR),
+userController.getMyProfile);
+
+router.put('/my-profile',auth(Role.ADMIN,Role.USER,Role.AUTHOR),
+userController.updateMyProfile
+);
+
+ 
+
+
+
+
+
+export const userRoutes = router;
