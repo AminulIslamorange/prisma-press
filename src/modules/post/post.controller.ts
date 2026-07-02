@@ -21,7 +21,8 @@ const createPost = catchAsync(async (req : Request, res : Response, next : NextF
 })
 
 const getAllPosts = catchAsync(async (req : Request, res : Response, next : NextFunction) => {
-    const result = await postService.getAllPosts();
+    const query=req.query;
+    const result = await postService.getAllPosts(query);
 
     sendResponce(res, {
         success : true,
@@ -99,6 +100,15 @@ const getMyPosts = catchAsync(async (req : Request, res : Response, next : NextF
     })
 })
 
+const getPostsStats = catchAsync(async (req : Request, res : Response, next : NextFunction) => {
+    const result = await postService.getPostsStats();
 
+    sendResponce(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "Post stats retrieved successfully",
+        data: result
+    })
+})
 export const postController = {
-    createPost,getAllPosts,getPostById,getMyPosts,updatePost,deletePost }
+    createPost,getAllPosts,getPostById,getMyPosts,updatePost,deletePost,getPostsStats }

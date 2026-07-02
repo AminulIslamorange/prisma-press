@@ -1,6 +1,8 @@
 import { Router } from "express";
-import { Role } from "../../../generated/prisma/enums";
 import { auth } from "../../midlewares/auth";
+import { commentController } from "./comment.controller";
+import { Role } from "../../../generated/prisma/enums";
+
 
 const router = Router();
 
@@ -15,10 +17,10 @@ router.get(
     commentController.getCommentByAuthorId
 );
 
-router.get(
-    "/:commentId",
-    commentController.getCommentByCommentId
-);
+// router.get(
+//     "/:commentId",
+//     commentController.getCommentByCommentId
+// );
 
 router.patch(
     "/:commentId",
