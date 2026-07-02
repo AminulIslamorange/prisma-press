@@ -1,4 +1,5 @@
 import { CommentStatus, PostStatus } from "../../../generated/prisma/enums"
+import { PostWhereInput } from "../../../generated/prisma/models"
 
 import { prisma } from "../../lib/prisma"
 import { ICreatePostPayload, IPostQuery, IUpdatePostPayload } from "./post.interface"
@@ -16,178 +17,239 @@ const createPost = async (payload: ICreatePostPayload, userId: string) => {
 
 
 const getAllPosts = async (query: IPostQuery) => {
-    const limit=query.limit? Number(query.limit)  :10;
-    const page=query.page? Number(query.page):1;
-    const skip=(page-1 )* limit;
-    const sortBy=query.sortBy ? query.sortBy :'createdAt';
-    const sortOrder=query.sortOrder ? query.sortOrder :'dese'
-    const posts = await prisma.post.findMany(
-        {
-            //Filtering or Exact match
-            //     where:{
-            //         title:'My First Post',
-            //         content:'Rolando'
-            //     },
-            // same match with and and operator
-            //    where:{
-            //     AND:[
-            //         {
-            //             title:ny'My First Post',
-            //         },
-            //         {
-            //           content:'Rolando'  
-            //         }
-            //     ]
+    const limit = query.limit ? Number(query.limit) : 10;
+    const page = query.page ? Number(query.page) : 1;
+    const skip = (page - 1) * limit;
+    const sortBy = query.sortBy ? query.sortBy : 'createdAt';
+    
+    
+    const sortOrder = query.sortOrder ? query.sortOrder : 'desc';
 
-            //    },
+     const tags=query.tags?JSON.parse(query.tags as string):null;
+     const tagsArray=Array.isArray(tags) ? tags:[]
 
-            //searching parcial match
-            // where:{
-            //     title:{
-            //         contains:'My',
-            //         mode:'insensitive'
-
-            //     },
-
-            //     //not ideal for partial match
-            //     content:{
-            //         contains:'M'
-            //     }
-
-            // },
-
-            // where:{
-            //     OR:[
-            //         {
-            //             title:{
-            //                 contains:'my',
-            //                 mode:'insensitive'
-            //             }
-            //         },
-            //         {
-            //             content:{
-            //                 contains:'m',
-            //                 mode:'insensitive'
-            //             }
-            //         }
-            //     ]
-            // },
-
-            //combind search and Filtering (OR AND)
-
-            // where: {
-            //     //Filtering
-            //     AND: [
-            //         {
-            //             //searching
-            //             OR:[
-            //                 {
-            //                     title:{
-            //                         contains:'My',
-            //                         mode:'insensitive'
-            //                     }
-
-
-            //                 },
-            //                 {
-            //                     content:{
-            //                         contains:'my',
-            //                         mode:'insensitive'
-            //                     },
-
-            //                 }
-            //             ]
-            //         },
-            //         // Filtering
-            //         {
-            //             title: 'My First Post'
-            //         },
-            //         {
-            //             content: 'My First post'
-            //         }
-            //     ]
-
-            // },
-
-            //pagination with(limit or take and skip)
-
-
-
-
-            //take:1,
-            //:2, 
-            //for first page skip is 0
-            //page vigiting 2
-            // skip:2 //page vigiting 3
-            //skip:3 //page vigiting 
-
-            //(page-1) * limit
-            //page=3,limit/take=10=>(3-1)* 10=20
-
-            //sorting
-            //   orderBy:{
-            //     createdAt:'desc',
-            //     title:'asc',
-            //     content:'desc'
-            //     //fieldName:asc/desc
-            //   },
-
-            where: {
-                AND: [
-                    //search searchTerm
-
-                    query.searchTerm ? {
-                        OR:[
-                            {
-                                title:{
-                                    contains:query.searchTerm,
-                                    mode:'insensitive'
-                                },
-                                 
-                            },
-                           {
-                             content:{
-                                    contains:query.searchTerm,
-                                    mode:'insensitive'
-                                }
-                           }
-                        ]
-                    } :{},
-
-                        //title Filtering
-
-                        query.title ? { title: query.title } : {},
-                    //content Filtering
-                    query.content ? { content: query.content } : {}
-
-
-                ]
-            },
-
-         take:limit,
-            skip:skip,
-
-
-            orderBy:{
-                //sortBy :sortOrder
-                [sortBy]:sortOrder
-
-
-            },
-
-            include: {
-                author: {
-                    omit: {
-                        password: true
+    const andConditions: PostWhereInput[] = [];
+    
+    if (query.searchTerm) {
+        andConditions.push({
+            OR: [
+                {
+                    title: {
+                        contains: query.searchTerm,
+                        mode: 'insensitive'
                     }
                 },
-                comments: true
+                {
+                    content: {
+                        contains: query.searchTerm,
+                        mode: 'insensitive'
+                    }
+                }
+            ]
+        });
+    }
+    
+    if (query.title) {
+        andConditions.push({
+            title: query.title
+        });
+    }
+    
+    if (query.content) {
+        andConditions.push({
+            content: query.content
+        });
+    }
+    
+    if (query.authorId) {
+        andConditions.push({
+            authorId: query.authorId
+        });  
+    }
+    
+    if (query.isFeatured) {
+        andConditions.push({
+            isFeatured: Boolean(query.isFeatured)
+        });
+    }
+    
+    if (query.tags) {
+        andConditions.push({
+            tags: {
+                hasSome: tagsArray
             }
-        }
-    );
+        });
+    }
+    
+    if (query.status) {
+        andConditions.push({
+            status: query.status
+        });
+    }
+    
+    const posts = await prisma.post.findMany({
+        /* =========================================================
+           ✨ ফিচার ১: হুবহু ম্যাচিং ফিল্টারিং (Filtering or Exact Match)
+           ========================================================= */
+        // where: {
+        //     title: 'My First Post',
+        //     content: 'Rolando'
+        // },
 
-    return posts
-}
+        /* =========================================================
+           ✨ ফিচার ২: অ্যান্ড অপারেটর দিয়ে হুবহু ফিল্টারিং (AND Operator Match)
+           ========================================================= */
+        // where: {
+        //     AND: [
+        //         {
+        //             title: 'My First Post', // টাইপো ফিক্সড
+        //         },
+        //         {
+        //             content: 'Rolando'  
+        //         }
+        //     ]
+        // },
+
+        /* =========================================================
+           ✨ ফিচার ৩: আংশিক ম্যাচিং সার্চ (Searching Partial Match)
+           ========================================================= */
+        // where: {
+        //     title: {
+        //         contains: 'My',
+        //         mode: 'insensitive'
+        //     },
+        //     // কনটেন্টের জন্য আংশিক ম্যাচ (নট আইডিয়াল সিঙ্গেল ফিল্ড হিসেবে)
+        //     content: {
+        //         contains: 'M'
+        //     }
+        // },
+
+        /* =========================================================
+           ✨ ফিচার ৪: ওআর অপারেটর দিয়ে যেকোনো একটি ফিল্ড সার্চ (OR Search)
+           ========================================================= */
+        // where: {
+        //     OR: [
+        //         {
+        //             title: {
+        //                 contains: 'my',
+        //                 mode: 'insensitive'
+        //             }
+        //         },
+        //         {
+        //             content: {
+        //                 contains: 'm',
+        //                 mode: 'insensitive'
+        //             }
+        //         }
+        //     ]
+        // },
+
+        /* =========================================================
+           ✨ ফিচার ৫: সার্চ এবং ফিল্টারিং একসাথে কম্বাইন করা (Combined Search & Filter)
+           ========================================================= */
+        // where: {
+        //     AND: [
+        //         {
+        //             OR: [
+        //                 {
+        //                     title: {
+        //                         contains: 'My',
+        //                         mode: 'insensitive'
+        //                     }
+        //                 },
+        //                 {
+        //                     content: {
+        //                         contains: 'my',
+        //                         mode: 'insensitive'
+        //                     },
+        //                 }
+        //             ]
+        //         },
+        //         {
+        //             title: 'My First Post'
+        //         },
+        //         {
+        //             content: 'My First post'
+        //         }
+        //     ]
+        // },
+
+        /* =========================================================
+           ✨ ফিচার ৬: পেজিনেশন লজিক (Pagination Mechanics - Take & Skip)
+           ========================================================= */
+        // take: 1,
+        // for first page skip is 0
+        // page visiting 2 => skip: 2
+        // page visiting 3 => skip: 3 
+        // সূত্র: (page - 1) * limit
+        // উদাহরণ: page = 3, limit = 10 => (3 - 1) * 10 = 20
+
+        /* =========================================================
+           ✨ ফিচার ৭: ডাটা সর্টিং বা সিরিয়াল করা (Sorting - Field Name: asc/desc)
+           ========================================================= */
+        // orderBy: {
+        //     createdAt: 'desc',
+        //     title: 'asc',
+        //     content: 'desc'
+        // },
+
+        /* =========================================================
+           ✨ ফিচার ৮: ডাইনামিক সার্চ এবং ফিল্টারিং (Dynamic Searching & Filtering)
+           ========================================================= */
+        // where: {
+        //     AND: [
+        //         query.searchTerm ? {
+        //             OR: [
+        //                 {
+        //                     title: {
+        //                         contains: query.searchTerm,
+        //                         mode: 'insensitive'
+        //                     },
+        //                 },
+        //                 {
+        //                     content: {
+        //                         contains: query.searchTerm,
+        //                         mode: 'insensitive'
+        //                     }
+        //                 }
+        //             ]
+        //         } : {},
+        //         query.title ? { title: query.title } : {},
+        //         query.content ? { content: query.content } : {},
+        //         {
+        //             tags: {
+        //                 hasSome: ['']
+        //             }
+        //         }
+        //     ]
+        // },
+
+        // 🚀 একটিভ রানটাইম কোড (Active Code)
+        where: {
+            AND: andConditions
+        }, 
+
+        /* =========================================================
+           ✨ ফিচার ৯: ডাইনামিক পেজিনেশন এবং সর্টিং (Dynamic Pagination & Sorting)
+           ========================================================= */
+        take: limit,
+        skip: skip,
+        orderBy: {
+            [sortBy]: sortOrder
+        }, 
+
+        include: {
+            author: {
+                omit: {
+                    password: true
+                }
+            },
+            comments: true
+        }
+    });
+
+    return posts;
+};
 
 // const getPostById = async (postId: string) => {
 //     const post = await prisma.post.findUniqueOrThrow({

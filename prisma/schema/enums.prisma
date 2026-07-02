@@ -18,3 +18,8 @@ enum Role{
    ADMIN
 
 }
+enum SubscriptionStatus{
+  ACTIVE
+  CANCELED
+  EXPIRED
+}
